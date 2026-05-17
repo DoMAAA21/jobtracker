@@ -1,0 +1,9 @@
+# Job Tracker — production compose (stub)
+#
+# Not implemented yet. When ready, add multi-stage images under docker/prod/
+# and run:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# See docker/prod/README.md
+
+services: {}

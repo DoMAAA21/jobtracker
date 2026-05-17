@@ -8,4 +8,12 @@ export default defineConfig({
     react(),
     babel({ presets: [reactCompilerPreset()] })
   ],
+  server: {
+    host: true,
+    port: Number(process.env.PORT) || 5173,
+    strictPort: true,
+    watch: {
+      usePolling: process.env.CHOKIDAR_USEPOLLING === 'true',
+    },
+  },
 })
