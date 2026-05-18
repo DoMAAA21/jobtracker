@@ -53,7 +53,7 @@ const ConfirmationPopUp = ({
                         <Button variant="ghost" onClick={handleCancel}>
                             {cancelButton}
                         </Button>
-                        <Button variant="default" className="bg-brand-dark-purple text-white hover:bg-brand-dark-purple/90 cursor-pointer" onClick={handleConfirm}>
+                        <Button variant="default" className="bg-primary text-white hover:bg-primary/90 cursor-pointer" onClick={handleConfirm}>
                             {confirmButton}
                         </Button>
                     </DialogFooter>

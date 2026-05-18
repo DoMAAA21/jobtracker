@@ -1,16 +1,21 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DataTable } from '@/components/data-table';
 import { useMutator, type ApiUsersResponseRaw } from '@/interfaces/responses/api.users';
 import { useQueryString } from '@/hooks/use-query-string';
 import http from '@/lib/http';
 import { parsePositiveInt, pickSearchParams } from '@/lib/utils';
 import { UserFilterForm, type UserFilterFormData } from './_components/user-filter-form';
+import { EyeIcon, PencilIcon, TrashIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { showConfirmationPopup } from '@/components/confirmation-popup';
+import { toast } from 'sonner';
 
 const COLUMNS = [
   { key: 'id', header: 'ID', sortTable: true },
   { key: 'name', header: 'Name', sortTable: true },
   { key: 'email', header: 'Email', sortTable: true },
   { key: 'createdAt', header: 'Created At', sortTable: true },
+  { key: 'actions', header: 'Actions', sortTable: false },
 ] as const;
 
 const DEFAULT_SORT_BY = 'createdAt';
@@ -18,7 +23,7 @@ const DEFAULT_SORT_ORDER = 'desc';
 
 export default function UsersPage() {
   const { getParam, setParam, setParams } = useQueryString();
-
+  const queryClient = useQueryClient();
   const page = parsePositiveInt(getParam('page'), 1);
   const perPage = parsePositiveInt(getParam('perPage'), 10);
   const sortBy = getParam('sortBy') ?? DEFAULT_SORT_BY;
@@ -41,6 +46,20 @@ export default function UsersPage() {
       return response;
     },
     select: useMutator,
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const { data: response } = await http.delete<ApiUsersResponseRaw>(`/users/${id}`);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success('User deleted successfully');
+    },
+    onError: () => {
+      toast.error('Failed to delete user');
+    },
   });
 
   function handlePageChange(nextPage: number) {
@@ -73,6 +92,41 @@ export default function UsersPage() {
     });
   }
 
+  function handleViewUser(id: number) {
+    console.log(id);
+  }
+
+  function handleEditUser(id: number) {
+    console.log(id);
+  }
+
+  function handleDeleteUser(id: number) {
+   showConfirmationPopup({
+    title: 'Delete User',
+    message: 'Are you sure you want to delete this user?',
+    onSuccess: () => {
+      deleteUserMutation.mutate(id);
+    },
+   })
+  } 
+
+  const rows = data?.data.map((user) => ({
+    ...user,
+    actions: (
+      <div className="flex space-x-2">
+        <Button variant="outline" size="sm" className="cursor-pointer" onClick={() => handleViewUser(user.id)}>
+          <EyeIcon className="w-4 h-4" />
+        </Button>
+        <Button variant="outline" size="sm" className="cursor-pointer" onClick={() => handleEditUser(user.id)}>
+          <PencilIcon className="w-4 h-4" />
+        </Button>
+        <Button variant="outline" size="sm" className="cursor-pointer" onClick={() => handleDeleteUser(user.id)}> 
+          <TrashIcon className="w-4 h-4" />
+        </Button>
+      </div>
+    ),
+  }));
+
   return (
     <div className="space-y-4">
       <div>
@@ -87,7 +141,7 @@ export default function UsersPage() {
         defaultFilterOpen={hasActiveFilters}
         activeSortColumn={sortBy}
         activeSortOrder={sortOrder}
-        data={data?.data ?? []}
+        data={rows ?? []}
         currentPage={page}
         totalPages={data?.last_page ?? 1}
         totalRows={data?.total ?? 0}
