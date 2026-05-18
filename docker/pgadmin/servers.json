@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Job Tracker (Docker)",
+      "Group": "Development",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "jobtracker",
+      "Username": "jobtracker",
+      "PassFile": "/pgpass",
+      "SSLMode": "prefer"
+    }
+  }
+}
