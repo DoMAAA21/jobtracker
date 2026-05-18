@@ -7,7 +7,8 @@ import * as bcrypt from 'bcrypt';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { QueryUsersDto } from './dto/query-users.dto';
+import type { SortOrder } from '@/common/dto/pagination-query.dto';
+import { QueryUsersDto, type UserSortField } from './dto/query-users.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PaginatedUsers, PublicUser } from './types';
 
@@ -17,6 +18,16 @@ const userSelect = {
   name: true,
   createdAt: true,
 } satisfies Prisma.UserSelect;
+
+const userOrderBy: Record<
+  UserSortField,
+  (order: SortOrder) => Prisma.UserOrderByWithRelationInput
+> = {
+  id: (order) => ({ id: order }),
+  name: (order) => ({ name: order }),
+  email: (order) => ({ email: order }),
+  createdAt: (order) => ({ createdAt: order }),
+};
 
 @Injectable()
 export class UsersService {
@@ -36,6 +47,10 @@ export class UsersService {
       }),
     };
 
+    const sortBy = query.sortBy ?? 'createdAt';
+    const sortOrder = query.sortOrder ?? 'desc';
+    const orderBy = userOrderBy[sortBy](sortOrder);
+
     const [total, users] = await this.prisma.$transaction([
       this.prisma.user.count({ where }),
       this.prisma.user.findMany({
@@ -43,7 +58,7 @@ export class UsersService {
         select: userSelect,
         skip,
         take: perPage,
-        orderBy: { createdAt: 'desc' },
+        orderBy,
       }),
     ]);
 

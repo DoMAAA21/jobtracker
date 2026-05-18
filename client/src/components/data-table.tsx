@@ -41,6 +41,8 @@ type DataTableProps<T> = {
     onMultiSendEmail?: () => void;
     onExportCSV?: () => void;
     onImportCSV?: () => void;
+    activeSortColumn?: string | null;
+    activeSortOrder?: string;
 };
 
 export interface DataTableRef {
@@ -71,10 +73,12 @@ export const DataTable = forwardRef<DataTableRef, DataTableProps<any>>(<T,>({
     onMultiRestore,
     onMultiSendEmail,
     onExportCSV,
-    onImportCSV
+    onImportCSV,
+    activeSortColumn,
+    activeSortOrder,
 }: DataTableProps<T>, ref: React.Ref<DataTableRef>) => {
-    const [sortColumn, setSortColumn] = useState<string | null>(null);
-    const [sortOrder, setSortOrder] = useState('asc');
+    const [sortColumn, setSortColumn] = useState<string | null>(activeSortColumn ?? null);
+    const [sortOrder, setSortOrder] = useState(activeSortOrder ?? 'asc');
     const [searchTerm, setSearchTerm] = useState("");
     const [showFilter, setShowFilter] = useState(defaultFilterOpen);
 
@@ -83,6 +87,15 @@ export const DataTable = forwardRef<DataTableRef, DataTableProps<any>>(<T,>({
             setShowFilter(true);
         }
     }, [defaultFilterOpen]);
+
+    useEffect(() => {
+        if (activeSortColumn !== undefined) {
+            setSortColumn(activeSortColumn);
+        }
+        if (activeSortOrder !== undefined) {
+            setSortOrder(activeSortOrder);
+        }
+    }, [activeSortColumn, activeSortOrder]);
     const [selectedRows, setSelectedRows] = useState<T[]>([]);
     const [selectAll, setSelectAll] = useState(false);
     const [isExportImportOpen, setIsExportImportOpen] = useState(false);
