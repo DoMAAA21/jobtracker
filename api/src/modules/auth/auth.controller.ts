@@ -18,6 +18,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { AuthUser } from './types';
+import { Throttle } from '@nestjs/throttler';
 
 type RequestWithUser = Request & { user: AuthUser };
 
@@ -39,6 +40,7 @@ export class AuthController {
   }
 
   @Post('login')
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,

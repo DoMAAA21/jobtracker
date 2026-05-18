@@ -23,7 +23,6 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  @Throttle({ default: { limit: 60, ttl: 60000 } }) // 60 requests per minute
   findAll(@Query() query: QueryUsersDto) {
     return this.usersService.findAll(query);
   }

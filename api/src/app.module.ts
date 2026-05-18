@@ -11,7 +11,7 @@ import { APP_GUARD } from '@nestjs/core';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 25 }]),
+    ThrottlerModule.forRoot([{ limit: 60 , ttl: 60000,}]),
     PrismaModule,
     AuthModule,
     UsersModule,
