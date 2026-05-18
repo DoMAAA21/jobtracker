@@ -1,27 +1,63 @@
-import { Controller, Post, Get, Body, Req } from '@nestjs/common';
-import { RegisterDto } from './dto/register.dto';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
+import {
+  clearAccessTokenCookie,
+  setAccessTokenCookie,
+} from './auth-cookie.util';
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
+import { JwtAuthGuard } from './jwt-auth.guard';
 import { AuthUser } from './types/auth-user.type';
 
 type RequestWithUser = Request & { user: AuthUser };
 
 @Controller('auth')
 export class AuthController {
-    constructor(private authService: AuthService) { }
+  constructor(
+    private readonly authService: AuthService,
+    private readonly config: ConfigService,
+  ) {}
 
-    @Post('register')
-    async register(@Body() dto: RegisterDto) {
-        return this.authService.register(dto);
-    }
+  @Post('register')
+  async register(
+    @Body() dto: RegisterDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { accessToken, user } = await this.authService.register(dto);
+    setAccessTokenCookie(res, this.config, accessToken);
+    return { user };
+  }
 
-    @Post('login')
-    async login(@Body() dto: LoginDto) {
-        return this.authService.login(dto);
-    }
+  @Post('login')
+  async login(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { accessToken, user } = await this.authService.login(dto);
+    setAccessTokenCookie(res, this.config, accessToken);
+    return { user };
+  }
 
-    @Get('me')
-    async me(@Req() req: RequestWithUser) {
-        return req.user;
-    }
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  logout(@Res({ passthrough: true }) res: Response) {
+    clearAccessTokenCookie(res, this.config);
+    return { message: 'Logged out' };
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  me(@Req() req: RequestWithUser) {
+    return req.user;
+  }
 }
