@@ -82,7 +82,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             type="button"
             variant="ghost"
             size="sm"
-            className="mt-2 w-full justify-start gap-2 px-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            className="cursor-pointer mt-2 w-full justify-start gap-2 px-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             onClick={() => {
               onNavigate?.();
               void logout();
