@@ -17,7 +17,7 @@ import {
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import { AuthUser } from './types/auth-user.type';
+import { AuthUser } from './types';
 
 type RequestWithUser = Request & { user: AuthUser };
 
