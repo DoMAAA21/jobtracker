@@ -3,8 +3,7 @@ import { isAxiosError } from 'axios';
 import { FormProvider, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { RegisterForm } from './_components/register-form';
-import type { RegisterFormValues } from './_components/register-form.types';
+import { RegisterForm, type RegisterFormValues } from './_components/register-form';
 import { Button } from '@/components/ui/button';
 import http from '@/lib/http';
 

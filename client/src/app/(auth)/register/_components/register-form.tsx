@@ -1,8 +1,13 @@
 import { useFormContext } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import type { RegisterFormValues } from './register-form.types';
 import { EMAIL_REGEX } from '@/lib/regex';
+
+export type RegisterFormValues = {
+    name: string;
+    email: string;
+    password: string;
+};
 
 export function RegisterForm() {
     const {

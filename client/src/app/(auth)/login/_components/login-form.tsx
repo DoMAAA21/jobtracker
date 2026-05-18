@@ -2,7 +2,11 @@ import { useFormContext } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { EMAIL_REGEX } from '@/lib/regex';
-import type { LoginFormValues } from './login-form.types';
+
+export type LoginFormValues = {
+  email: string;
+  password: string;
+};
 
 export function LoginForm() {
   const {

@@ -2,21 +2,42 @@ import { useRoutes } from 'react-router-dom';
 import AuthGuard from './app/(auth)/_guards/auth-guard';
 import LoginPage from './app/(auth)/login/page';
 import RegisterPage from './app/(auth)/register/page';
+import ApplicationsPage from './app/applications/page';
 import HomePage from './app/home/page';
+import SettingsPage from './app/settings/page';
+import MainLayout from './layouts/main-layout';
 
 export default function Routes() {
-    return useRoutes([
+  return useRoutes([
+    {
+      path: '/login',
+      element: <LoginPage />,
+    },
+    {
+      path: '/register',
+      element: <RegisterPage />,
+    },
+    {
+      path: '/',
+      element: (
+        <AuthGuard>
+          <MainLayout />
+        </AuthGuard>
+      ),
+      children: [
         {
-            path: "/login",
-            element: <LoginPage />,
+          index: true,
+          element: <HomePage />,
         },
         {
-            path: "/register",
-            element: <RegisterPage />,
+          path: 'applications',
+          element: <ApplicationsPage />,
         },
         {
-            path: "/",
-            element: <AuthGuard><HomePage /></AuthGuard>,
+          path: 'settings',
+          element: <SettingsPage />,
         },
-    ]);
+      ],
+    },
+  ]);
 }
