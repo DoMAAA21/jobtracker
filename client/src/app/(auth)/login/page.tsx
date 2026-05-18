@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 import { LoginForm, type LoginFormValues } from './_components/login-form';
 import { Button } from '@/components/ui/button';
 import http from '@/lib/http';
+import { useAuth } from '@/contexts/auth-context';
+import { useEffect } from 'react';
 
 type LoginResponse = {
   user: {
@@ -17,6 +19,13 @@ type LoginResponse = {
 export default function LoginPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
 
   const form = useForm<LoginFormValues>({
     defaultValues: {

@@ -2,6 +2,7 @@ import {
   Briefcase,
   LayoutDashboard,
   Settings,
+  Users,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -21,6 +22,11 @@ export const mainMenuItems: MenuItem[] = [
     label: 'Applications',
     path: '/applications',
     icon: Briefcase,
+  },
+  {
+    label: 'Users',
+    path: '/users',
+    icon: Users,
   },
 ];
 

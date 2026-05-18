@@ -5,6 +5,7 @@ import RegisterPage from './app/(auth)/register/page';
 import ApplicationsPage from './app/applications/page';
 import HomePage from './app/home/page';
 import SettingsPage from './app/settings/page';
+import UsersPage from './app/users/page';
 import MainLayout from './layouts/main-layout';
 
 export default function Routes() {
@@ -32,6 +33,10 @@ export default function Routes() {
         {
           path: 'applications',
           element: <ApplicationsPage />,
+        },
+        {
+          path: 'users',
+          element: <UsersPage />,
         },
         {
           path: 'settings',
