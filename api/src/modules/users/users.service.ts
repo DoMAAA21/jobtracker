@@ -1,8 +1,11 @@
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import {
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import type { Cache } from 'cache-manager';
 import * as bcrypt from 'bcrypt';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -29,9 +32,16 @@ const userOrderBy: Record<
   createdAt: (order) => ({ createdAt: order }),
 };
 
+const USER_CACHE_TTL_MS = 60_000;
+
+const userCacheKey = (id: number) => `user:${id}`;
+
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
+  ) {}
 
   async findAll(query: QueryUsersDto): Promise<PaginatedUsers> {
     const page = query.page ?? 1;
@@ -74,6 +84,12 @@ export class UsersService {
   }
 
   async findOne(id: number): Promise<PublicUser> {
+    const key = userCacheKey(id);
+    const cached = await this.cache.get<PublicUser>(key);
+    if (cached) {
+      return cached;
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id },
       select: userSelect,
@@ -83,6 +99,7 @@ export class UsersService {
       throw new NotFoundException(`User #${id} not found`);
     }
 
+    await this.cache.set(key, user, USER_CACHE_TTL_MS);
     return user;
   }
 
@@ -128,17 +145,21 @@ export class UsersService {
       }),
     };
 
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id },
       data,
       select: userSelect,
     });
+
+    await this.cache.del(userCacheKey(id));
+    return updated;
   }
 
   async remove(id: number): Promise<{ message: string }> {
     await this.findOne(id);
 
     await this.prisma.user.delete({ where: { id } });
+    await this.cache.del(userCacheKey(id));
 
     return { message: 'User deleted' };
   }
