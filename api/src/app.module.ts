@@ -10,6 +10,7 @@ import { UsersModule } from './modules/users/users.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import redisConfig from './config/redis.config';
+import { AppCacheModule } from '@/common/cache/cache.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import redisConfig from './config/redis.config';
       }),
     }),
     ThrottlerModule.forRoot([{ limit: 60 , ttl: 60000,}]),
+    AppCacheModule,
     PrismaModule,
     AuthModule,
     UsersModule,

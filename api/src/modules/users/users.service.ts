@@ -1,16 +1,14 @@
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import {
   ConflictException,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import type { Cache } from 'cache-manager';
 import * as bcrypt from 'bcrypt';
+import { CacheService } from '@/common/cache/cache.service';
+import type { SortOrder } from '@/common/dto/pagination-query.dto';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import type { SortOrder } from '@/common/dto/pagination-query.dto';
 import { QueryUsersDto, type UserSortField } from './dto/query-users.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PaginatedUsers, PublicUser } from './types';
@@ -33,14 +31,27 @@ const userOrderBy: Record<
 };
 
 const USER_CACHE_TTL_MS = 60_000;
+const USER_LIST_CACHE_TTL_MS = 30_000;
+const USERS_LIST_VERSION_KEY = 'users:list:version';
 
 const userCacheKey = (id: number) => `user:${id}`;
+
+const usersListCacheKey = (
+  version: number,
+  page: number,
+  perPage: number,
+  sortBy: UserSortField,
+  sortOrder: SortOrder,
+  email?: string,
+  name?: string,
+) =>
+  `users:list:v${version}:${page}:${perPage}:${sortBy}:${sortOrder}:${email ?? ''}:${name ?? ''}`;
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
-    @Inject(CACHE_MANAGER) private readonly cache: Cache,
+    private readonly cache: CacheService,
   ) {}
 
   async findAll(query: QueryUsersDto): Promise<PaginatedUsers> {
@@ -61,46 +72,62 @@ export class UsersService {
     const sortOrder = query.sortOrder ?? 'desc';
     const orderBy = userOrderBy[sortBy](sortOrder);
 
-    const [total, users] = await this.prisma.$transaction([
-      this.prisma.user.count({ where }),
-      this.prisma.user.findMany({
-        where,
-        select: userSelect,
-        skip,
-        take: perPage,
-        orderBy,
-      }),
-    ]);
+    const listVersion = await this.cache.getVersion(USERS_LIST_VERSION_KEY);
+    const cacheKey = usersListCacheKey(
+      listVersion,
+      page,
+      perPage,
+      sortBy,
+      sortOrder,
+      query.email,
+      query.name,
+    );
 
-    return {
-      data: users,
-      meta: {
-        page,
-        perPage,
-        total,
-        totalPages: Math.max(1, Math.ceil(total / perPage)),
+    return this.cache.getOrSet(
+      cacheKey,
+      async () => {
+        const [total, users] = await this.prisma.$transaction([
+          this.prisma.user.count({ where }),
+          this.prisma.user.findMany({
+            where,
+            select: userSelect,
+            skip,
+            take: perPage,
+            orderBy,
+          }),
+        ]);
+
+        return {
+          data: users,
+          meta: {
+            page,
+            perPage,
+            total,
+            totalPages: Math.max(1, Math.ceil(total / perPage)),
+          },
+        };
       },
-    };
+      USER_LIST_CACHE_TTL_MS,
+    );
   }
 
   async findOne(id: number): Promise<PublicUser> {
-    const key = userCacheKey(id);
-    const cached = await this.cache.get<PublicUser>(key);
-    if (cached) {
-      return cached;
-    }
+    return this.cache.getOrSet(
+      userCacheKey(id),
+      async () => {
+        const user = await this.prisma.user.findUnique({
+          where: { id },
+          select: userSelect,
+        });
 
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-      select: userSelect,
-    });
+        if (!user) {
+          throw new NotFoundException(`User #${id} not found`);
+        }
 
-    if (!user) {
-      throw new NotFoundException(`User #${id} not found`);
-    }
-
-    await this.cache.set(key, user, USER_CACHE_TTL_MS);
-    return user;
+        return user;
+      },
+      USER_CACHE_TTL_MS,
+    );
   }
 
   async create(dto: CreateUserDto): Promise<PublicUser> {
@@ -114,7 +141,7 @@ export class UsersService {
 
     const password = await bcrypt.hash(dto.password, 10);
 
-    return this.prisma.user.create({
+    const user = await this.prisma.user.create({
       data: {
         email: dto.email,
         name: dto.name,
@@ -122,6 +149,9 @@ export class UsersService {
       },
       select: userSelect,
     });
+
+    await this.cache.bumpVersion(USERS_LIST_VERSION_KEY);
+    return user;
   }
 
   async update(id: number, dto: UpdateUserDto): Promise<PublicUser> {
@@ -152,6 +182,7 @@ export class UsersService {
     });
 
     await this.cache.del(userCacheKey(id));
+    await this.cache.bumpVersion(USERS_LIST_VERSION_KEY);
     return updated;
   }
 
@@ -160,6 +191,7 @@ export class UsersService {
 
     await this.prisma.user.delete({ where: { id } });
     await this.cache.del(userCacheKey(id));
+    await this.cache.bumpVersion(USERS_LIST_VERSION_KEY);
 
     return { message: 'User deleted' };
   }
