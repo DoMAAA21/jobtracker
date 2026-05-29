@@ -36,7 +36,7 @@ export class AuthController {
   ) {
     const { accessToken, user } = await this.authService.register(dto);
     setAccessTokenCookie(res, this.config, accessToken);
-    return { user };
+    return { user, accessToken };
   }
 
   @Post('login')
@@ -47,7 +47,7 @@ export class AuthController {
   ) {
     const { accessToken, user } = await this.authService.login(dto);
     setAccessTokenCookie(res, this.config, accessToken);
-    return { user };
+    return { user, accessToken };
   }
 
   @Post('logout')
